@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Point Heist Prototype v15</title>
+  <style>
+    :root{
+      --bg:#0b1020;--panel:#121a31;--panel2:#182242;--line:#2b396b;--text:#eef2ff;--muted:#9fb0df;
+      --gold:#f1c840;--danger:#ff6b6b;--ok:#59d18c;--attack:#ef4444;--counter:#a855f7;--treasure:#facc15;--ocean:#38bdf8;--chaos:#f97316;--draw:#10b981;
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,Arial,sans-serif;background:linear-gradient(180deg,#09102e,#0b1020 35%,#0f1730);color:var(--text)}
+    .hidden{display:none!important}
+    .center{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .box,.panel{background:rgba(18,26,49,.97);border:1px solid var(--line);border-radius:20px;padding:18px;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+    .box{width:min(820px,100%)}
+    h1,h2,h3,p{margin:0}
+    .muted{color:var(--muted)}
+    .field{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+    input{background:#0d1430;border:1px solid var(--line);color:var(--text);padding:12px 14px;border-radius:14px;font-size:16px;width:100%}
+    button{background:var(--panel2);color:var(--text);border:1px solid var(--line);padding:10px 14px;border-radius:12px;font-weight:700;cursor:pointer}
+    button:hover{filter:brightness(1.05)}
+    button.primary{background:linear-gradient(180deg,#27407b,#1d2d59);border-color:#4965a7}
+    button.ok{background:linear-gradient(180deg,#105d42,#0d4130);border-color:#1c8f68}
+    button.gold{background:linear-gradient(180deg,#6d5a16,#4a3d0d);border-color:#a68a1e;color:#fff5c6}
+    button.danger{background:linear-gradient(180deg,#742f35,#592026);border-color:#9d4953}
+    button:disabled{opacity:.45;cursor:not-allowed}
+    .mode-grid,.grid,.layout,.row{display:grid;gap:14px}
+    .mode-grid{grid-template-columns:1fr 1fr;margin-top:16px}
+    .app{max-width:1250px;margin:0 auto;padding:18px}
+    .topbar{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+    .title{font-size:28px;font-weight:800}
+    .subtitle{color:var(--muted);font-size:14px;margin-top:4px}
+    .grid{grid-template-columns:1.15fr 1.15fr .9fr;margin-bottom:16px}
+    .layout{grid-template-columns:1.6fr .9fr}
+    .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px}
+    .card{border:1px solid var(--line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:230px}
+    .type-Angriff{border-color:var(--attack);background:linear-gradient(180deg,#2b0f14,#0c1430)}
+    .type-Konter{border-color:var(--counter);background:linear-gradient(180deg,#241033,#0c1430)}
+    .type-Schatz{border-color:var(--treasure);background:linear-gradient(180deg,#2a2300,#0c1430)}
+    .type-Ozean{border-color:var(--ocean);background:linear-gradient(180deg,#0a1b2e,#0c1430)}
+    .type-Chaos{border-color:var(--chaos);background:linear-gradient(180deg,#2a1406,#0c1430)}
+    .type-Ziehen{border-color:var(--draw);background:linear-gradient(180deg,#0d241a,#0c1430)}
+    .card-title{font-weight:900;font-size:20px}.card-type{font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase}
+    .card-text{font-size:14px;line-height:1.35;color:#dbe5ff;flex:1}
+    .score{font-size:38px;font-weight:900;color:var(--gold)}
+    .badge{padding:6px 10px;border-radius:999px;background:#0d1430;border:1px solid var(--line);font-size:12px;color:var(--muted);font-weight:700;display:inline-block;margin:4px 4px 0 0}
+    .active{outline:2px solid var(--gold)}
+    .turn-banner{margin-bottom:14px;padding:12px 14px;border-radius:16px;background:#20180a;border:1px solid #6d5a16;color:#fff0b5;font-weight:800}
+    .log{display:flex;flex-direction:column;gap:8px;max-height:460px;overflow:auto}
+    .log-entry{padding:10px 12px;border-radius:12px;background:#0d1430;border:1px solid #24345f;font-size:13px;line-height:1.35}
+    .room-code{font-size:28px;font-weight:900;letter-spacing:3px;color:#fff0b5;background:#20180a;border:1px solid #6d5a16;border-radius:14px;padding:10px 14px;text-align:center}
+    .winner{position:fixed;inset:0;background:rgba(2,6,23,.72);display:flex;align-items:center;justify-content:center;padding:20px}
+    .winner-box{width:min(520px,100%);background:rgba(18,26,49,.99);border:1px solid var(--line);border-radius:22px;padding:24px;text-align:center}
+    @media (max-width:900px){.mode-grid,.grid,.layout{grid-template-columns:1fr}.cards{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div id="setupScreen" class="center">
+  <div class="box">
+    <h2>Point Heist</h2>
+    <p class="muted" style="margin-top:6px">Lokal an einem Gerät oder online per Raumcode.</p>
+    <div class="field">
+      <label>Dein Name</label>
+      <input id="playerName" type="text" value="Spieler" maxlength="24">
+    </div>
+    <div class="mode-grid">
+      <div class="panel">
+        <h3>Lokal</h3>
+        <p class="muted" style="margin:8px 0 12px">Zwei Spieler an einem Gerät. Das muss immer funktionieren.</p>
+        <button class="primary" onclick="startLocalMatch()">Lokales Match starten</button>
+      </div>
+      <div class="panel">
+        <h3>Online</h3>
+        <p class="muted" style="margin:8px 0 12px">Erstelle ein Match und teile den Code mit deinem Gegner.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px">
+          <button class="ok" onclick="createOnlineMatch()">Online-Match erstellen</button>
+        </div>
+        <div class="field" style="margin-top:0">
+          <label>Raumcode eingeben</label>
+          <input id="joinCode" type="text" maxlength="8" placeholder="z. B. A7KD">
+        </div>
+        <button onclick="joinOnlineMatch()">Match beitreten</button>
+      </div>
+    </div>
+    <div id="setupStatus" class="muted" style="margin-top:12px"></div>
+  </div>
+</div>
+
+<div id="lobbyScreen" class="center hidden">
+  <div class="box" style="max-width:520px">
+    <h2>Online-Lobby</h2>
+    <p id="lobbyText" class="muted" style="margin:8px 0 12px">Warte auf den zweiten Spieler.</p>
+    <div id="roomCodeDisplay" class="room-code">----</div>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px">
+      <button onclick="copyCode()">Code kopieren</button>
+      <button onclick="cancelLobby()">Abbrechen</button>
+    </div>
+  </div>
+</div>
+
+<div id="gameScreen" class="app hidden">
+  <div class="topbar">
+    <div>
+      <div class="title">Point Heist Prototype</div>
+      <div class="subtitle">Ziel: 150 Punkte • Handlimit: 3 • Punkte können negativ werden</div>
+    </div>
+    <div>
+      <span class="badge" id="modeBadge">Modus: Lokal</span>
+      <span class="badge" id="roomBadge">Raum: —</span><span class="badge" id="roleBadge">Rolle: —</span>
+      <button onclick="restart()">Neu mischen</button>
+    </div>
+  </div>
+  <div id="turnBanner" class="turn-banner"></div>
+  <div class="grid">
+    <div id="player0Panel" class="panel"></div>
+    <div id="player1Panel" class="panel"></div>
+    <div class="panel">
+      <h3 style="margin-bottom:10px">Match</h3>
+      <div class="score" id="roundValue">1</div>
+      <div class="muted">Aktuelle Runde</div>
+      <div style="margin-top:14px;padding:12px;border-radius:14px;background:#0d1430;border:1px solid #24345f">
+        <div class="muted">Zuletzt passiert</div>
+        <div id="lastLogPreview" style="font-weight:800;margin-top:6px">Noch nichts.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="panel">
+      <h3 style="margin-bottom:10px">Hand – <span id="currentPlayerName"></span> <span class="badge" id="playsLeftBadge">Noch 2 Karten diese Runde</span></h3>
+      <div id="currentHand" class="cards"></div>
+      <div style="margin-top:14px">
+        <button id="endTurnBtn" class="gold" onclick="endTurn()">Zug beenden</button>
+      </div>
+      <div class="muted" style="margin-top:10px">Gegnerhand: <span id="opponentHandCount">0</span> Karten. Online siehst du immer nur deine eigene Hand.</div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div id="reactionPanel" class="panel hidden"></div>
+      <div id="overloadPanel" class="panel hidden"></div>
+      <div class="panel">
+        <h3 style="margin-bottom:10px">Spielregeln</h3>
+        <div class="muted" style="display:grid;gap:10px">
+          <div>• Zwei Spieler. Ziel sind 150 Punkte. Punktestände dürfen auch negativ werden.</div>
+          <div>• Zu Beginn jedes Zuges zieht der aktive Spieler 1 Karte.</div>
+          <div>• Pro Runde dürfen maximal 2 Karten gespielt werden.</div>
+          <div>• Freiwilliges Abwerfen löst keinen Effekt aus.</div>
+          <div>• Über 3 Handkarten bedeutet Überladung. Abgeworfene Karten werden ausgespielt.</div>
+          <div>• Einige Karten reagieren direkt auf andere Karten.</div>
+          <div>• Sonderregel: Spieler 2 wird durch seinen ersten normalen Zug nicht sofort überladen.</div>
+          <div>• Karteneffekte ignorieren diese Schutzregel.</div>
+        </div>
+      </div>
+      <div class="panel">
+        <h3 style="margin-bottom:10px">Log</h3>
+        <div id="log" class="log"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="winnerOverlay" class="winner hidden">
+  <div class="winner-box">
+    <h2 id="winnerTitle">Match beendet</h2>
+    <p id="winnerSubtitle" class="muted" style="margin:10px 0 18px"></p>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <button class="primary" onclick="restart()">Neues Match</button>
+      <button onclick="document.getElementById('winnerOverlay').classList.add('hidden');document.getElementById('log').scrollIntoView({behavior:'smooth'})">Log angucken</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://kvxhjmltakplvmvbganx.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2eGhqbWx0YWtwbHZtdmJnYW54Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0MjU1ODksImV4cCI6MjA4OTAwMTU4OX0.PsUWcAKvQCLNUtqEjNOXr2tz30pMdkyKzCSr57S7fn8";
+const TARGET_SCORE=150, HAND_LIMIT=3;
+let supabaseClient=null, game=null, playMode="local", myPlayerName="", myOnlineRole=null, currentRoomCode=null, currentMatchId=null, currentChannel=null;
+
+const CARD_LIBRARY=[
+{id:"moby_dick",name:"Moby Dick",type:"Ozean",text:"+50 Punkte. Kann von Harpune abgefangen werden.",copies:2,effect:{kind:"gain",amount:50}},
+{id:"harpune",name:"Harpune",type:"Konter",text:"Reaktion: Wenn Moby Dick gespielt wird, bekommst du stattdessen die +50 Punkte.",copies:2,reactionTo:["moby_dick"],reactionEffect:{kind:"steal_moby"}},
+{id:"doppelharpune",name:"Doppelharpune",type:"Konter",text:"Reaktion: Wenn Moby Dick gespielt wird, bekommst du die +50 Punkte und der Gegner verliert 10.",copies:1,reactionTo:["moby_dick"],reactionEffect:{kind:"double_steal_moby",bonusLoss:10}},
+{id:"goldmine",name:"Goldmine",type:"Schatz",text:"+25 Punkte.",copies:3,effect:{kind:"gain",amount:25}},
+{id:"schatzinsel",name:"Schatzinsel",type:"Schatz",text:"+30 Punkte.",copies:2,effect:{kind:"gain",amount:30}},
+{id:"drachenhort",name:"Drachenhort",type:"Schatz",text:"+35 Punkte.",copies:2,effect:{kind:"gain",amount:35}},
+{id:"diamantenregen",name:"Diamantenregen",type:"Schatz",text:"+25 Punkte.",copies:2,effect:{kind:"gain",amount:25}},
+{id:"piratenueberfall",name:"Piratenüberfall",type:"Angriff",text:"Klaue 25 Punkte.",copies:3,effect:{kind:"steal",amount:25}},
+{id:"kraken",name:"Kraken",type:"Ozean",text:"Gegner verliert 25 Punkte.",copies:2,effect:{kind:"damage",amount:25}},
+{id:"bankraub",name:"Bankraub",type:"Angriff",text:"Klaue 30 Punkte.",copies:2,effect:{kind:"steal",amount:30}},
+{id:"kartenregen",name:"Kartenregen",type:"Ziehen",text:"Ziehe 2 Karten.",copies:3,effect:{kind:"draw",amount:2}},
+{id:"sturmflut",name:"Sturmflut",type:"Ziehen",text:"Dein Gegner zieht 2 Karten.",copies:2,effect:{kind:"enemy_draw",amount:2}},
+{id:"wahnsinn",name:"Wahnsinn",type:"Ziehen",text:"Dein Gegner zieht 3 Karten.",copies:1,effect:{kind:"enemy_draw",amount:3}},
+{id:"chaoswuerfel",name:"Chaoswürfel",type:"Chaos",text:"50/50: -20 oder +40 Punkte.",copies:2,effect:{kind:"chaos_die"}},
+{id:"schutzschild",name:"Schutzschild",type:"Konter",text:"Aktiv: Der nächste Angriff gegen dich wird negiert.",copies:2,effect:{kind:"shield"}},
+{id:"spiegelwelt",name:"Spiegelwelt",type:"Konter",text:"Aktiv: Der nächste Angriff oder Punkteklau gegen dich trifft den Gegner selbst.",copies:1,effect:{kind:"mirror"}},
+{id:"zeitbruch",name:"Zeitbruch",type:"Chaos",text:"Wiederhole den Effekt deiner zuletzt gespielten Karte, falls möglich.",copies:1,effect:{kind:"repeat_last"}},
+{id:"druck",name:"Druck",type:"Ziehen",text:"Dein Gegner zieht 1 Karte. Wenn er über 3 Karten kommt, wird er überladen.",copies:2,effect:{kind:"enemy_draw",amount:1}},
+{id:"nullfeld",name:"Nullfeld",type:"Konter",text:"Reaktion: Annulliert eine gespielte Karte komplett.",copies:1,reactionTo:["*"],reactionEffect:{kind:"cancel"}},
+{id:"leviathan",name:"Leviathan",type:"Ozean",text:"Wenn bereits Moby Dick gespielt wurde: klaue 40 Punkte. Sonst +10 Punkte.",copies:1,effect:{kind:"leviathan"}},
+{id:"nebel_der_tiefe",name:"Nebel der Tiefe",type:"Ozean",text:"Aktiv: Deine nächste Ozean-Karte kann nicht gekontert werden.",copies:1,effect:{kind:"ocean_protect"}}
+];
+
+function setStatus(msg){document.getElementById("setupStatus").textContent=msg||"";}
+function getName(){return (document.getElementById("playerName").value||"Spieler").trim()||"Spieler";}
+function ensureSupabase(){
+  if(supabaseClient) return supabaseClient;
+  if(!window.supabase || !window.supabase.createClient) throw new Error("Supabase-Bibliothek wurde nicht geladen.");
+  supabaseClient=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+  return supabaseClient;
+}
+function shuffle(a){const arr=[...a];for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
+function buildDeck(){const deck=[];CARD_LIBRARY.forEach(c=>{for(let i=0;i<c.copies;i++) deck.push({uid:`${c.id}_${i}_${Math.random().toString(36).slice(2,8)}`,...c});});return shuffle(deck);}
+function clonePlayers(players){return players.map(p=>({...p,hand:[...p.hand],discard:[...p.discard],statuses:{...p.statuses},playedIds:[...p.playedIds]}));}
+function createInitialGame(name1,name2){let deck=buildDeck();const players=[{name:name1,score:0,hand:[],discard:[],statuses:{},playedIds:[],lastResolvedCard:null,hasTakenFirstTurnDrawProtectionUsed:false},{name:name2,score:0,hand:[],discard:[],statuses:{},playedIds:[],lastResolvedCard:null,hasTakenFirstTurnDrawProtectionUsed:false}];for(let r=0;r<3;r++){players[0].hand.push(deck.shift());players[1].hand.push(deck.shift());}return{deck,players,currentPlayer:0,turn:1,winner:null,log:[`Match gestartet. ${players[0].name} beginnt.`],reaction:null,overloadChoice:null,pendingResolve:null};}
+function drawCards(state,playerIndex,amount,logPrefix=""){const next={...state,deck:[...state.deck],players:clonePlayers(state.players),log:[...state.log]};let drawnCount=0;for(let i=0;i<amount;i++){if(!next.deck.length)break;next.players[playerIndex].hand.push(next.deck.shift());drawnCount++;}if(drawnCount){next.log.unshift(`${logPrefix}${next.players[playerIndex].name} zieht ${drawnCount===1?"1 Karte":drawnCount+" Karten"}.`);}return next;}
+function applyStatusesAgainstTarget(state,attackerIndex,defenderIndex,payload,sourceName){const next={...state,players:clonePlayers(state.players),log:[...state.log]};const defender=next.players[defenderIndex], attacker=next.players[attackerIndex];if(!["gain","draw","repeat_last"].includes(payload.kind)){if(defender.statuses.shield){defender.statuses.shield=false;next.log.unshift(`${attacker.name} versucht mit ${sourceName} einen Effekt auszulösen, aber Schutzschild kontert komplett.`);return{next,blocked:true};}if(defender.statuses.mirror&&["steal","damage"].includes(payload.kind)){defender.statuses.mirror=false;if(payload.kind==="steal"){attacker.score-=payload.amount;defender.score+=payload.amount;next.log.unshift(`${attacker.name} versucht mit ${sourceName}, ${payload.amount} Punkte zu stehlen, aber Spiegelwelt wirft den Effekt zurück.`);}else{attacker.score-=payload.amount;next.log.unshift(`${attacker.name} versucht mit ${sourceName} Punkte abzuziehen, aber Spiegelwelt wirft den Effekt zurück.`);}return{next,blocked:true};}}return{next,blocked:false};}
+function performCardEffect(state,playerIndex,card,source="play"){let next={...state,players:clonePlayers(state.players),deck:[...state.deck],log:[...state.log]};const me=next.players[playerIndex], oppIndex=playerIndex===0?1:0, opp=next.players[oppIndex];
+if(card.effect?.kind==="gain"){me.score+=card.effect.amount;next.log.unshift(`${me.name} ${source==="overload"?"überlädt":"spielt"} ${card.name} und erhält ${card.effect.amount} Punkte.`);}
+if(card.effect?.kind==="steal"){const check=applyStatusesAgainstTarget(next,playerIndex,oppIndex,card.effect,card.name);next=check.next;if(!check.blocked){next.players[oppIndex].score-=card.effect.amount;next.players[playerIndex].score+=card.effect.amount;next.log.unshift(`${next.players[playerIndex].name} spielt ${card.name} und stiehlt erfolgreich ${card.effect.amount} Punkte von ${next.players[oppIndex].name}.`);}}
+if(card.effect?.kind==="damage"){const check=applyStatusesAgainstTarget(next,playerIndex,oppIndex,card.effect,card.name);next=check.next;if(!check.blocked){next.players[oppIndex].score-=card.effect.amount;next.log.unshift(`${next.players[playerIndex].name} spielt ${card.name}. ${next.players[oppIndex].name} verliert erfolgreich ${card.effect.amount} Punkte.`);}}
+if(card.effect?.kind==="draw"){next.log.unshift(`${me.name} spielt ${card.name} und zieht ${card.effect.amount} Karten.`);next=drawCards(next,playerIndex,card.effect.amount);}
+if(card.effect?.kind==="enemy_draw"){next.log.unshift(`${me.name} spielt ${card.name}. ${opp.name} zieht ${card.effect.amount} Karten.`);next=drawCards(next,oppIndex,card.effect.amount);}
+if(card.effect?.kind==="chaos_die"){if(Math.random()<0.5){me.score+=40;next.log.unshift(`${me.name} spielt ${card.name}: Glück. +40 Punkte.`);}else{me.score-=20;next.log.unshift(`${me.name} spielt ${card.name}: Pech. -20 Punkte.`);}}
+if(card.effect?.kind==="shield"){me.statuses.shield=true;next.log.unshift(`${me.name} aktiviert Schutzschild.`);}
+if(card.effect?.kind==="mirror"){me.statuses.mirror=true;next.log.unshift(`${me.name} aktiviert Spiegelwelt.`);}
+if(card.effect?.kind==="ocean_protect"){me.statuses.oceanProtect=true;next.log.unshift(`${me.name} hüllt seine nächste Ozean-Karte in Nebel der Tiefe.`);}
+if(card.effect?.kind==="leviathan"){if(next.players.some(p=>p.playedIds.includes("moby_dick"))){opp.score-=40;me.score+=40;next.log.unshift(`${me.name} entfesselt Leviathan und stiehlt 40 Punkte.`);}else{me.score+=10;next.log.unshift(`${me.name} spielt Leviathan ohne Beute und erhält nur 10 Punkte.`);}}
+if(card.effect?.kind==="repeat_last"){const last=me.lastResolvedCard;if(last&&last.id!=="zeitbruch"){next.log.unshift(`${me.name} spielt Zeitbruch und wiederholt ${last.name}.`);next=performCardEffect(next,playerIndex,last,"wiederholt");}else{next.log.unshift(`${me.name} spielt Zeitbruch, aber es gibt nichts Sinnvolles zu wiederholen.`);}}
+me.lastResolvedCard=card;me.playedIds.push(card.id);return next;}
+function checkWinner(state){const next={...state,players:clonePlayers(state.players),log:[...state.log]};const win=next.players.findIndex(p=>p.score>=TARGET_SCORE);if(win>=0&&next.winner===null){next.winner=win;next.log.unshift(`${next.players[win].name} gewinnt mit ${next.players[win].score} Punkten.`);}return next;}
+function findReactionOptions(hand,playedCard){return hand.filter(c=>c.reactionTo&&(c.reactionTo.includes("*")||c.reactionTo.includes(playedCard.id)));}
+function maybeAskForReaction(state,playerIndex,card){const next={...state,players:clonePlayers(state.players),log:[...state.log]};const oppIndex=playerIndex===0?1:0;const me=next.players[playerIndex];if(me.statuses.oceanProtect&&card.type==="Ozean"){me.statuses.oceanProtect=false;next.log.unshift(`${card.name} ist durch Nebel der Tiefe geschützt und kann nicht gekontert werden.`);return next;}const options=findReactionOptions(next.players[oppIndex].hand,card);if(!options.length)return next;next.reaction={playedBy:playerIndex,playedCard:card,reactor:oppIndex,options};return next;}
+function startTurnDraw(state){let next=drawCards(state,state.currentPlayer,1,"Rundenstart: ");const current=next.currentPlayer, player=next.players[current];const protectedOpen=next.turn===1&&current===1&&!player.hasTakenFirstTurnDrawProtectionUsed&&player.hand.length===HAND_LIMIT+1;if(protectedOpen){player.hasTakenFirstTurnDrawProtectionUsed=true;next.log.unshift(`${player.name} würde durch den ersten normalen Rundenzug sofort überladen werden. Die Eröffnungs-Schutzregel greift.`);return next;}if(player.hand.length>HAND_LIMIT){next.overloadChoice={playerIndex:current};next.log.unshift(`${player.name} ist überladen und muss Karten abwerfen. Diese Karten werden ausgespielt.`);}return next;}
+function canAct(){
+  if (playMode === "local") return true;
+  const currentTurn = Number(game && game.currentPlayer != null ? game.currentPlayer : 0);
+  const myRole = Number(myOnlineRole);
+  return myRole === currentTurn;
+}
+async function pushState(){if(playMode!=="online"||!currentMatchId)return;await ensureSupabase().from("matches").update({game_state:game,player2:game.players[1].name||null,status:game.winner!==null?"finished":"active"}).eq("id",currentMatchId);}
+function renderPlayerPanel(index){
+const player=game.players[index], isActive=game.currentPlayer===index, panel=document.getElementById("player"+index+"Panel");
+const activeEffects = [
+  player.statuses.shield ? '<span class="badge" style="border-color:#38bdf8;color:#d9efff">Schutzschild aktiv</span>' : '',
+  player.statuses.mirror ? '<span class="badge" style="border-color:#a855f7;color:#f0ddff">Spiegelwelt aktiv</span>' : '',
+  player.statuses.oceanProtect ? '<span class="badge" style="border-color:#10b981;color:#d7fff1">Nebel der Tiefe aktiv</span>' : ''
+].join('');
+panel.className="panel"+(isActive?" active":"");
+panel.innerHTML=`<h3 style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px"><span>${player.name}</span><span class="score">${player.score}</span></h3><div style="margin:2px 0 8px 0">${activeEffects || '<span class="muted">Keine aktiven Effekte</span>'}</div><div class="muted">${isActive?"Gerade am Zug":"Wartet"}</div><div><span class="badge">Handkarten: ${player.hand.length}</span><span class="badge">Ablage: ${player.discard.length}</span><span class="badge">Letzte Karte: ${player.lastResolvedCard?player.lastResolvedCard.name:"—"}</span></div>`;}
+function renderHand(){
+const ownerIndex = visibleHandOwner();
+const visiblePlayer = game.players[ownerIndex];
+const hand=document.getElementById("currentHand");
+hand.innerHTML="";
+visiblePlayer.hand.forEach(card=>{
+  const el=document.createElement("div");
+  el.className=`card type-${card.type}`;
+  el.innerHTML=`<div class="card-title">${card.name}</div><div class="card-type">${card.type}</div><div class="card-text">${card.text}</div><div style="display:flex;gap:8px"><button class="primary">Spielen</button><button>Abwerfen</button></div>`;
+  const b=el.querySelectorAll("button");
+  b[0].onclick=()=>playCard(card.uid);
+  b[1].onclick=()=>discardCard(card.uid);
+  if(!canAct() || ownerIndex !== game.currentPlayer){b[0].disabled=true;b[1].disabled=true;}
+  hand.appendChild(el);
+});
+document.getElementById("currentPlayerName").textContent = playMode==="online" ? `${visiblePlayer.name} (deine Hand)` : visiblePlayer.name;
+document.getElementById("opponentHandCount").textContent = game.players[ownerIndex===0?1:0].hand.length;
+}
+function renderReactionPanel(){const panel=document.getElementById("reactionPanel");if(!game.reaction){panel.classList.add("hidden");panel.innerHTML="";return;}const reactor=game.players[game.reaction.reactor];panel.classList.remove("hidden");panel.innerHTML=`<h3 style="margin-bottom:10px">Reaktion von ${reactor.name}</h3><div class="muted" style="margin-bottom:10px">Auf ${game.reaction.playedCard.name} kann reagiert werden.</div><div id="reactionButtons" style="display:grid;gap:8px"></div>`;const wrap=document.getElementById("reactionButtons");game.reaction.options.forEach(card=>{const btn=document.createElement("button");btn.textContent=card.name;btn.disabled=!canAct();btn.onclick=()=>useReaction(card.uid);wrap.appendChild(btn);});const skip=document.createElement("button");skip.className="primary";skip.textContent="Nicht reagieren";skip.disabled=!canAct();skip.onclick=resolveNoReaction;wrap.appendChild(skip);}
+function renderOverloadPanel(){const panel=document.getElementById("overloadPanel");if(!game.overloadChoice){panel.classList.add("hidden");panel.innerHTML="";return;}const p=game.players[game.overloadChoice.playerIndex];panel.classList.remove("hidden");panel.innerHTML=`<h3 style="margin-bottom:10px">Überladung – ${p.name}</h3><div class="muted" style="margin-bottom:10px">Wähle eine Karte zum Abwerfen. Sie wird sofort ausgespielt.</div><div id="overloadButtons" style="display:grid;gap:8px"></div>`;const wrap=document.getElementById("overloadButtons");p.hand.forEach(card=>{const btn=document.createElement("button");btn.className="danger";btn.textContent=card.name;btn.disabled=!canAct();btn.onclick=()=>discardForOverload(card.uid);wrap.appendChild(btn);});}
+function renderLog(){const log=document.getElementById("log");log.innerHTML="";game.log.forEach(entry=>{const div=document.createElement("div");div.className="log-entry";div.textContent=entry;log.appendChild(div);});document.getElementById("lastLogPreview").textContent=game.log[0]||"Noch nichts.";}
+function render(){if(!game)return;renderPlayerPanel(0);renderPlayerPanel(1);renderHand();renderReactionPanel();renderOverloadPanel();renderLog();document.getElementById("roundValue").textContent=game.turn;document.getElementById("modeBadge").textContent="Modus: "+(playMode==="online"?"Online":"Lokal");document.getElementById("roomBadge").textContent="Raum: "+(currentRoomCode||"—"); document.getElementById("roleBadge").textContent="Rolle: "+(playMode==="online" ? (Number(myOnlineRole)===0 ? "Spieler 1" : "Spieler 2") : "Lokal");document.getElementById("turnBanner").textContent=game.winner!==null?`${game.players[game.winner].name} gewinnt das Match.`:`${game.players[Number(game.currentPlayer||0)].name} ist am Zug.${playMode==="online"?(canAct()?" Du bist dran.":" Du wartest auf den Gegner."):""}`;document.getElementById("playsLeftBadge").textContent=`Noch ${Math.max(0,2-playsThisTurn)} Karten diese Runde`;document.getElementById("endTurnBtn").disabled=!!game.reaction||!!game.overloadChoice||game.winner!==null||!canAct();if(game.winner!==null){document.getElementById("winnerTitle").textContent=game.players[game.winner].name+" gewinnt";document.getElementById("winnerSubtitle").textContent=`Endstand: ${game.players[0].name} ${game.players[0].score} : ${game.players[1].score} ${game.players[1].name}`;document.getElementById("winnerOverlay").classList.remove("hidden");}else{document.getElementById("winnerOverlay").classList.add("hidden");}}
+function playCard(uid){if(game.winner!==null||game.reaction||game.overloadChoice||!canAct())return;const next={...game,deck:[...game.deck],players:clonePlayers(game.players),log:[...game.log]};const p=next.players[next.currentPlayer];const idx=p.hand.findIndex(c=>c.uid===uid);if(idx<0)return;const [card]=p.hand.splice(idx,1);p.discard.push(card);let after=maybeAskForReaction(next,next.currentPlayer,card);if(after.reaction){after.pendingResolve={playerIndex:next.currentPlayer,card};after.log.unshift(`${p.name} spielt ${card.name}. ${after.players[after.reaction.reactor].name} kann reagieren.`);game=after;render();pushState();return;}game=checkWinner(performCardEffect(after,next.currentPlayer,card));render();pushState();}
+function discardCard(uid){if(game.winner!==null||game.reaction||game.overloadChoice||!canAct())return;const next={...game,deck:[...game.deck],players:clonePlayers(game.players),log:[...game.log]};const p=next.players[next.currentPlayer];const idx=p.hand.findIndex(c=>c.uid===uid);if(idx<0)return;const [card]=p.hand.splice(idx,1);p.discard.push(card);next.log.unshift(`${p.name} wirft ${card.name} freiwillig ab.`);game=next;render();pushState();}
+function resolveNoReaction(){if(!game.reaction||!game.pendingResolve||!canAct())return;let next={...game,reaction:null,pendingResolve:null,deck:[...game.deck],players:clonePlayers(game.players),log:[...game.log]};game=checkWinner(performCardEffect(next,game.pendingResolve.playerIndex,game.pendingResolve.card));render();pushState();}
+function useReaction(uid){if(!game.reaction||!game.pendingResolve||!canAct())return;const next={...game,reaction:null,pendingResolve:null,deck:[...game.deck],players:clonePlayers(game.players),log:[...game.log]};const reactor=next.players[game.reaction.reactor];const playedBy=next.players[game.reaction.playedBy];const idx=reactor.hand.findIndex(c=>c.uid===uid);if(idx<0)return;const [reactionCard]=reactor.hand.splice(idx,1);reactor.discard.push(reactionCard);if(reactionCard.reactionEffect.kind==="cancel"){next.log.unshift(`${reactor.name} reagiert mit Nullfeld. ${game.pendingResolve.card.name} wird vollständig annulliert.`);}else if(reactionCard.reactionEffect.kind==="steal_moby"){reactor.score+=50;reactor.lastResolvedCard=reactionCard;next.log.unshift(`${reactor.name} reagiert mit Harpune und bekommt die 50 Punkte statt des Gegners.`);}else{reactor.score+=50;playedBy.score-=reactionCard.reactionEffect.bonusLoss;reactor.lastResolvedCard=reactionCard;next.log.unshift(`${reactor.name} reagiert mit Doppelharpune, bekommt die 50 Punkte und ${playedBy.name} verliert zusätzlich 10 Punkte.`);}next.players[game.reaction.reactor].playedIds.push(reactionCard.id);game=checkWinner(next);render();pushState();}
+function discardForOverload(uid){if(!game.overloadChoice||!canAct())return;const playerIndex=game.overloadChoice.playerIndex;const next={...game,deck:[...game.deck],players:clonePlayers(game.players),log:[...game.log]};const p=next.players[playerIndex];const idx=p.hand.findIndex(c=>c.uid===uid);if(idx<0)return;const [card]=p.hand.splice(idx,1);p.discard.push(card);let after=checkWinner(performCardEffect(next,playerIndex,card,"overload"));after.overloadChoice=after.players[playerIndex].hand.length>HAND_LIMIT&&after.winner===null?{playerIndex}:null;game=after;render();pushState();}
+function endTurn(){if(game.winner!==null||game.reaction||game.overloadChoice||!canAct())return;let next={...game,currentPlayer:game.currentPlayer===0?1:0,turn:game.currentPlayer===1?game.turn+1:game.turn,deck:[...game.deck],players:clonePlayers(game.players),log:[...game.log]};next.log.unshift(`Zugwechsel: ${next.players[next.currentPlayer].name} ist dran.`);game=checkWinner(startTurnDraw(next));render();pushState();}
+function restart(){document.getElementById("winnerOverlay").classList.add("hidden"); playsThisTurn=0;if(playMode==="online"&&currentMatchId){game=createInitialGame(game.players[0].name,game.players[1].name);render();pushState();}else{startLocalMatch();}}
+function startLocalMatch(){myPlayerName=getName();playMode="local";myOnlineRole=null;currentRoomCode=null;playsThisTurn=0;game=createInitialGame(myPlayerName,"Spieler 2");document.getElementById("setupScreen").classList.add("hidden");document.getElementById("lobbyScreen").classList.add("hidden");document.getElementById("gameScreen").classList.remove("hidden");render();}
+function randomCode(){const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";let s="";for(let i=0;i<4;i++)s+=chars[Math.floor(Math.random()*chars.length)];return s;}
+async function subscribeToMatch(matchId){if(currentChannel){try{await ensureSupabase().removeChannel(currentChannel);}catch(e){}}currentChannel=ensureSupabase().channel(`match-${matchId}`).on('postgres_changes',{event:'UPDATE',schema:'public',table:'matches',filter:`id=eq.${matchId}`},payload=>{if(payload.new&&payload.new.game_state){game=payload.new.game_state; game.currentPlayer = Number(game.currentPlayer ?? 0); if (game.reaction === undefined) game.reaction = null; if (game.overloadChoice === undefined) game.overloadChoice = null; if (game.currentPlayer !== Number(myOnlineRole ?? -1)) playsThisTurn = 0; render();if(document.getElementById("lobbyScreen").classList.contains("hidden")===false&&payload.new.player2){document.getElementById("lobbyScreen").classList.add("hidden");document.getElementById("gameScreen").classList.remove("hidden");}}}).subscribe();}
+async function createOnlineMatch(){try{setStatus("Online-Match wird erstellt...");myPlayerName=getName();playMode="online";myOnlineRole=0;currentRoomCode=randomCode();playsThisTurn=0;game=createInitialGame(myPlayerName,"Wartet..."); game.currentPlayer = 0; game.reaction = null; game.overloadChoice = null;const {data,error}=await ensureSupabase().from("matches").insert({room_code:currentRoomCode,player1:myPlayerName,player2:null,game_state:game,status:"waiting"}).select().single();if(error) throw error;currentMatchId=data.id;document.getElementById("roomCodeDisplay").textContent=currentRoomCode;document.getElementById("setupScreen").classList.add("hidden");document.getElementById("lobbyScreen").classList.remove("hidden");await subscribeToMatch(currentMatchId);setStatus("");}catch(err){console.error(err);setStatus("Online-Match konnte nicht erstellt werden. Lokal sollte aber funktionieren.");}}
+async function joinOnlineMatch(){try{setStatus("Match wird gesucht...");myPlayerName=getName();const roomCode=(document.getElementById("joinCode").value||"").trim().toUpperCase();if(!roomCode){setStatus("Bitte einen Raumcode eingeben.");return;}const {data,error}=await ensureSupabase().from("matches").select("*").eq("room_code",roomCode).single();if(error||!data){setStatus("Kein Match mit diesem Code gefunden.");return;}currentMatchId=data.id;currentRoomCode=roomCode;playMode="online";myOnlineRole=1;playsThisTurn=0;game=data.game_state; game.currentPlayer = Number(game.currentPlayer ?? 0); game.reaction = null; game.overloadChoice = null; game.players[1].name=myPlayerName;const {error:updateError}=await ensureSupabase().from("matches").update({player2:myPlayerName,game_state:game,status:"active"}).eq("id",currentMatchId);if(updateError) throw updateError;await subscribeToMatch(currentMatchId);document.getElementById("setupScreen").classList.add("hidden");document.getElementById("gameScreen").classList.remove("hidden");render();setStatus("");}catch(err){console.error(err);setStatus("Beitritt fehlgeschlagen. Prüfe Raumcode und Supabase.");}}
+function copyCode(){const code=document.getElementById("roomCodeDisplay").textContent;navigator.clipboard&&navigator.clipboard.writeText(code);}
+function cancelLobby(){document.getElementById("lobbyScreen").classList.add("hidden");document.getElementById("setupScreen").classList.remove("hidden");}
+</script>
+</body>
+</html>
